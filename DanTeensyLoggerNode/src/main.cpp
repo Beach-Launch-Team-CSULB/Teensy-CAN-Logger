@@ -84,11 +84,15 @@ File myFile;
 // Teensy++ 2.0: pin 20
 const int chipSelect = BUILTIN_SDCARD;
 
+int busSpeed = 500000; //baudrate
+FlexCAN Can0(busSpeed, 0);
+FlexCAN Can1(busSpeed, 1);
 void setup()
 {
+while(!Serial);
 
-Can0.begin(500000);
-Can1.begin(500000);
+Can0.begin();
+Can1.begin();
 //[Sensor ID]
 //[][0] = M Value
 //[][1] = B Value
@@ -140,14 +144,14 @@ void loop()
 
 
   CANIDARRAYLen[message0.id] = message0.len;
-  // Serial.print(message0.len);
-  // Serial.print(" ");
-  // Serial.print(CANIDARRAYLen[message0.id]);
-  // Serial.println();
-  // Serial.print(message0.id);
-  // Serial.println();
-  // Serial.print(message0.buf[0]);
-  // Serial.println();
+   Serial.print(message0.len);
+   Serial.print(" ");
+   Serial.print(CANIDARRAYLen[message0.id]);
+   Serial.println();
+   Serial.print(message0.id);
+   Serial.println();
+   Serial.print(message0.buf[0]);
+   Serial.println();
   // Serial.print(message0.buf[1]);
   // Serial.println();
   for (int i = 0; i < message0.len; i++)
