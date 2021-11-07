@@ -12,6 +12,10 @@
 //#include <SensorClass.h>
 //#include <vector>
 
+int busSpeed = 500000; //baudrate
+FlexCAN Can0(busSpeed, 0);
+FlexCAN Can1(busSpeed, 1);
+
 CAN_message_t message0;
 CAN_message_t message1;
 elapsedMillis sinceGUIsend;
@@ -88,8 +92,8 @@ String sd_string = "can_log0.bin";
 
 void setup()
 {
-  Can0.begin(500000);
-  Can1.begin(500000);
+  Can0.begin();
+  Can1.begin();
   //[Sensor ID]
   //[][0] = M Value
   //[][1] = B Value
@@ -163,29 +167,34 @@ void setup()
 
 //SD CARD STUFF GOES HERE, Code is in
 
-void dump_CAN_To_Serial(String filename)
+void dump_CAN_To_Serial()
 {
-  CAN_message_t *can_pointer = new CAN_message_t();
+  CAN_message_t can_frame;
   if (teensy_sd_enabled)
   {
     //open file
-    File teensy_file = teensy_sd.open(filename.c_str(), FILE_READ);
 
-    Serial.println("here");
-    while (teensy_file.readBytes((char *)can_pointer, sizeof(CAN_message_t)) > 0)
+    File teensy_file = teensy_sd.open(sd_string.c_str(), FILE_READ);
+
+    int nBytes = teensy_file.readBytes((char *)&can_frame, sizeof(CAN_message_t));
+    printf("HERE");
+    printf("nBytes = %d\n", nBytes);
+
+    while (nBytes > 0)
     {
-      printf("id: %i, ext_id: %i, len: %i, buf = [", can_pointer->id, can_pointer->flags.extended, can_pointer->len);
-      for (int i = 0; i < can_pointer->len; i++)
+      printf("id: %i, ext_id: %i, len: %i, buf = [", can_frame.id, can_frame.ext, can_frame.len);
+      for (int i = 0; i < can_frame.len; i++)
       {
-        printf("%i, ", can_pointer->buf[i]);
+        printf("%i, ", can_frame.buf[i]);
       }
       printf("]\n");
+
+      nBytes = teensy_file.readBytes((char *)&can_frame, sizeof(CAN_message_t));
     }
 
     //close and save
     teensy_file.close();
   }
-  delete (can_pointer);
 }
 
 void loop()
@@ -199,17 +208,22 @@ void loop()
     Serial.println("received message!)");
     if (teensy_sd_enabled)
     {
+      Serial.println("sd enabled");
+
       //open file
       File can_log = teensy_sd.open(sd_string.c_str(), FILE_WRITE);
 
       //write to file
       can_log.write(&message0, sizeof(message0));
+      can_log.write(&message0, sizeof(message0));
+      can_log.write(&message0, sizeof(message0));
 
       //close and save
       can_log.close();
 
+      Serial.println("------------------------------");
       Serial.println("all the CAN frames in this file:");
-      dump_CAN_To_Serial(can_log.name());
+      dump_CAN_To_Serial();
     }
   }
 
@@ -253,6 +267,7 @@ void loop()
           CANIDARRAYConvertedBytes[i][0] = (Pressure >> 8) & 0xff;
           CANIDARRAYConvertedBytes[i][1] = Pressure & 0xff;
         }
+        /*
         Serial.print(value);
         Serial.print("  ");
         Serial.print(byte0);
@@ -263,6 +278,7 @@ void loop()
         Serial.print("  ");
         Serial.print(bitshift);
         Serial.println();
+        */
       }
     }
 
