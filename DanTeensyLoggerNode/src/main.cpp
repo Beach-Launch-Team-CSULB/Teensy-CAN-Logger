@@ -12,6 +12,8 @@
 //#include <SensorClass.h>
 //#include <vector>
 
+#include "Streaming.h"
+
 int busSpeed = 500000; //baudrate
 FlexCAN Can0(busSpeed, 0);
 FlexCAN Can1(busSpeed, 1);
@@ -51,40 +53,6 @@ int MAXSENSORVALUE = 36;
 
 float PtConversion[2048][2];
 
-/*
-  SD card read/write
- 
- This example shows how to read and write data to and from an SD card file 	
- The circuit:
- * SD card attached to SPI bus as follows:
- ** MOSI - pin 11, pin 7 on Teensy with audio board
- ** MISO - pin 12
- ** CLK - pin 13, pin 14 on Teensy with audio board
- ** CS - pin 4, pin 10 on Teensy with audio board
- 
- created   Nov 2010
- by David A. Mellis
- modified 9 Apr 2012
- by Tom Igoe
- 
- This example code is in the public domain.
- 	 
- */
-
-//*/
-
-//File myFile;
-
-// change this to match your SD shield or module;
-// Arduino Ethernet shield: pin 4
-// Adafruit SD shields and modules: pin 10
-// Sparkfun SD shield: pin 8
-// Teensy audio board: pin 10
-// Teensy 3.5 & 3.6 & 4.1 on-board: BUILTIN_SDCARD
-// Wiz820+SD board: pin 4
-// Teensy 2.0: pin 0
-// Teensy++ 2.0: pin 20
-//const int chipSelect = BUILTIN_SDCARD;
 
 bool teensy_sd_enabled;
 SDClass teensy_sd;
@@ -165,32 +133,37 @@ void setup()
   ///////////////////////////////////////////////END SD SETUP
 }
 
-//SD CARD STUFF GOES HERE, Code is in
 
-void dump_CAN_To_Serial()
+void dump_CAN_To_Serial(String filename)
 {
-  CAN_message_t can_frame;
+  CAN_message_t from_file;
   if (teensy_sd_enabled)
   {
     //open file
 
-    File teensy_file = teensy_sd.open(sd_string.c_str(), FILE_READ);
+    File teensy_file = teensy_sd.open(filename.c_str(), FILE_READ);
 
-    int nBytes = teensy_file.readBytes((char *)&can_frame, sizeof(CAN_message_t));
-    printf("HERE");
-    printf("nBytes = %d\n", nBytes);
+    int nBytes = teensy_file.readBytes((char *)&from_file, sizeof(CAN_message_t));
+    Serial << "nBytes = " << nBytes << endl;
 
+    int framesInFile =0;
     while (nBytes > 0)
     {
-      printf("id: %i, ext_id: %i, len: %i, buf = [", can_frame.id, can_frame.ext, can_frame.len);
-      for (int i = 0; i < can_frame.len; i++)
+      framesInFile++;
+      //printf("id: %i, ext_id: %i, len: %i, buf = [", can_frame.id, can_frame.ext, can_frame.len);
+      Serial << "id: " << from_file.id << ", extID " << from_file.ext << ", len " << from_file.len << ", buf = [";
+      for (int i = 0; i < from_file.len; i++)
       {
-        printf("%i, ", can_frame.buf[i]);
+        Serial << from_file.buf[i] << ", ";
+        //printf("%i, ", can_frame.buf[i]);
       }
-      printf("]\n");
+      Serial << "]" << endl;
 
-      nBytes = teensy_file.readBytes((char *)&can_frame, sizeof(CAN_message_t));
+      nBytes = teensy_file.readBytes((char *)&from_file, sizeof(CAN_message_t));
     }
+
+    Serial << framesInFile << "frames in file\n";
+    
 
     //close and save
     teensy_file.close();
@@ -215,15 +188,13 @@ void loop()
 
       //write to file
       can_log.write(&message0, sizeof(message0));
-      can_log.write(&message0, sizeof(message0));
-      can_log.write(&message0, sizeof(message0));
 
       //close and save
       can_log.close();
 
       Serial.println("------------------------------");
       Serial.println("all the CAN frames in this file:");
-      dump_CAN_To_Serial();
+      dump_CAN_To_Serial(sd_string);
     }
   }
 
