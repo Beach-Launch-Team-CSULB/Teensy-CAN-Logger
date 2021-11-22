@@ -1,6 +1,7 @@
 //*/
 // Renegade CAN Data logger and SF Stand message interpreter
 // Unfortunately by Dan
+//Contributed to by Jacob Waters
 
 #include <Arduino.h>
 #include <FlexCAN.h>
@@ -53,13 +54,13 @@ int MAXSENSORVALUE = 36;
 
 float PtConversion[2048][2];
 
-
 bool teensy_sd_enabled;
 SDClass teensy_sd;
 String sd_string = "can_log0.bin";
 
 void setup()
 {
+  Serial.begin(9600);
   Can0.begin();
   Can1.begin();
   //[Sensor ID]
@@ -133,9 +134,11 @@ void setup()
   ///////////////////////////////////////////////END SD SETUP
 }
 
-
 void dump_CAN_To_Serial(String filename)
 {
+  Serial << "------------------------------\n";
+  Serial<<"all the CAN frames in this file: " << filename << endl;
+
   CAN_message_t from_file;
   if (teensy_sd_enabled)
   {
@@ -146,7 +149,7 @@ void dump_CAN_To_Serial(String filename)
     int nBytes = teensy_file.readBytes((char *)&from_file, sizeof(CAN_message_t));
     Serial << "nBytes = " << nBytes << endl;
 
-    int framesInFile =0;
+    int framesInFile = 0;
     while (nBytes > 0)
     {
       framesInFile++;
@@ -163,7 +166,6 @@ void dump_CAN_To_Serial(String filename)
     }
 
     Serial << framesInFile << "frames in file\n";
-    
 
     //close and save
     teensy_file.close();
@@ -192,8 +194,6 @@ void loop()
       //close and save
       can_log.close();
 
-      Serial.println("------------------------------");
-      Serial.println("all the CAN frames in this file:");
       dump_CAN_To_Serial(sd_string);
     }
   }
